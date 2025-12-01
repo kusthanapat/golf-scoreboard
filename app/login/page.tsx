@@ -71,7 +71,7 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      router.push("/home");
+      router.push("/");
       router.refresh();
     } catch (err: any) {
       setError(err.message || "เข้าสู่ระบบไม่สำเร็จ");
@@ -84,7 +84,9 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        // ลบ options ออก - Supabase จะจัดการ redirect ให้เอง
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
       if (error) throw error;
@@ -132,11 +134,12 @@ export default function LoginPage() {
                 {dict.email[lang]}
               </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"></div>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full pl-2 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder={dict.emailPlaceholder[lang]}
                   required
                 />
@@ -149,11 +152,12 @@ export default function LoginPage() {
                 {dict.password[lang]}
               </label>
               <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"></div>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="w-full pl-2 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder={dict.passwordPlaceholder[lang]}
                   required
                 />
@@ -200,7 +204,9 @@ export default function LoginPage() {
                   <span>กำลังเข้าสู่ระบบ...</span>
                 </>
               ) : (
-                <span>{dict.loginButton[lang]}</span>
+                <>
+                  <span>{dict.loginButton[lang]}</span>
+                </>
               )}
             </button>
           </form>
@@ -216,22 +222,10 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 font-medium">
-                {dict.or[lang]}
-              </span>
-            </div>
-          </div>
-
           {/* Google Login Button */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 text-gray-700 font-semibold py-3 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+            className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 text-gray-700 font-semibold py-3 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-3 mb-6"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
