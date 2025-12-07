@@ -135,19 +135,13 @@ export default function Navbar({ currentLang, onLanguageChange }: NavbarProps) {
 
       {/* Mobile Menu Items */}
       <div className="md:hidden flex overflow-x-auto mt-3 gap-2">
-        <MobileNavButton
-          href="/home"
-          icon="🏠"
-          label={menuItems[currentLang].home}
-        />
+        <MobileNavButton href="/home" label={menuItems[currentLang].home} />
         <MobileNavButton
           href="/course-setup"
-          icon="⛳"
           label={menuItems[currentLang].courseSetup}
         />
         <MobileNavButton
           href="/score-entry"
-          icon="✏️"
           label={menuItems[currentLang].scoreEntry}
         />
       </div>
@@ -155,42 +149,26 @@ export default function Navbar({ currentLang, onLanguageChange }: NavbarProps) {
   );
 }
 
-function NavButton({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: string;
-  label: string;
-}) {
+// ✅ ลบ icon ออก
+function NavButton({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-emerald-600 whitespace-nowrap"
+      className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-emerald-600 whitespace-nowrap"
     >
-      <span className="text-lg">{icon}</span>
-      <span>{label}</span>
+      {label}
     </Link>
   );
 }
 
-function MobileNavButton({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: string;
-  label: string;
-}) {
+// ✅ ลบ icon ออก
+function MobileNavButton({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 transition-all whitespace-nowrap flex-shrink-0"
+      className="px-3 py-2 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 transition-all whitespace-nowrap flex-shrink-0"
     >
-      <span className="text-base">{icon}</span>
-      <span>{label}</span>
+      {label}
     </Link>
   );
 }
