@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
   // Protected routes
   const protectedPaths = ["/home", "/course-setup", "/score-entry"];
 
-  // ✅ อนุญาตให้ผ่านถ้ามี hash fragment (OAuth callback)
+  // อนุญาตให้ผ่านถ้ามี hash fragment (OAuth callback)
   // เพราะ Google OAuth จะ redirect กลับมาพร้อม #access_token
   const hasAuthFragment = request.nextUrl.hash.includes("access_token");
 

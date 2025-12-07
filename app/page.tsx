@@ -18,14 +18,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // เพิ่มการตรวจสอบ OAuth callback
+  // OAuth callback handler
   useEffect(() => {
-    // ตรวจสอบว่ามี hash fragment จาก OAuth callback หรือไม่
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
       setLoading(true);
 
-      // รอให้ Supabase process OAuth callback
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           router.push("/home");
@@ -102,10 +100,14 @@ export default function LoginPage() {
   async function handleGoogleLogin() {
     try {
       setLoading(true);
+
+      const redirectUrl =
+        typeof window !== "undefined" ? `${window.location.origin}/` : "/";
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: redirectUrl,
         },
       });
 
