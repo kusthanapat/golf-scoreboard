@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +17,25 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ✅ เพิ่มการตรวจสอบ OAuth callback
+  useEffect(() => {
+    // ตรวจสอบว่ามี hash fragment จาก OAuth callback หรือไม่
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token")) {
+      setLoading(true);
+
+      // รอให้ Supabase process OAuth callback
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          router.push("/home");
+          router.refresh();
+        } else {
+          setLoading(false);
+        }
+      });
+    }
+  }, [router, supabase]);
 
   const dict = {
     title: { TH: "เข้าสู่ระบบ", EN: "Login", CN: "登录" },
@@ -82,14 +101,19 @@ export default function LoginPage() {
 
   async function handleGoogleLogin() {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        // ลบ options ออก - Supabase จะจัดการ redirect ให้เอง
+        options: {
+          redirectTo: `${window.location.origin}/`, // ← เปลี่ยนเป็น / แทน /home
+        },
       });
 
       if (error) throw error;
     } catch (err: any) {
+      console.error("Google Login Error:", err);
       setError(err.message || "เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+      setLoading(false);
     }
   }
 
@@ -139,6 +163,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder={dict.emailPlaceholder[lang]}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -156,11 +181,13 @@ export default function LoginPage() {
                   className="w-full px-4 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   placeholder={dict.passwordPlaceholder[lang]}
                   required
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  disabled={loading}
                 >
                   {showPassword ? (
                     <Eye className="w-5 h-5" />
@@ -183,6 +210,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold"
+                disabled={loading}
               >
                 {dict.forgotPassword[lang]}
               </button>
@@ -211,6 +239,7 @@ export default function LoginPage() {
             <button
               onClick={() => router.push("/register")}
               className="text-emerald-600 hover:text-emerald-700 font-bold"
+              disabled={loading}
             >
               {dict.register[lang]}
             </button>
@@ -231,7 +260,8 @@ export default function LoginPage() {
           {/* Google Login Button */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 text-gray-700 font-semibold py-3 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-3"
+            disabled={loading}
+            className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 text-gray-700 font-semibold py-3 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path

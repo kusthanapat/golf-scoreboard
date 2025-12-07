@@ -77,19 +77,13 @@ export default function Navbar({ currentLang, onLanguageChange }: NavbarProps) {
 
         {/* Menu Items - Center */}
         <div className="hidden md:flex items-center gap-2">
-          <NavButton
-            href="/home"
-            icon="🏠"
-            label={menuItems[currentLang].home}
-          />
+          <NavButton href="/home" label={menuItems[currentLang].home} />
           <NavButton
             href="/course-setup"
-            icon="⛳"
             label={menuItems[currentLang].courseSetup}
           />
           <NavButton
             href="/score-entry"
-            icon="✏️"
             label={menuItems[currentLang].scoreEntry}
           />
         </div>

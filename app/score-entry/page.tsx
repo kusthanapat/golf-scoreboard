@@ -3,50 +3,57 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import ScoreModal from "@/components/ScoreModal";
+import { createClient } from "@/lib/supabase/client";
 
 type Language = "TH" | "EN" | "CN";
 
 interface Score {
-  studentName: string;
-  username: string;
+  rowIndex?: number;
+  timestamp?: string;
+  email?: string;
+  location: string; // ✅ เปลี่ยนจาก studentName
+  playerName: string; // ✅ เปลี่ยนจาก username
   scores: number[];
 }
 
 export default function ScoreEntryPage() {
   const [lang, setLang] = useState<Language>("TH");
   const [scores, setScores] = useState<Score[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingScore, setEditingScore] = useState<Score | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
+
+  const supabase = createClient();
 
   useEffect(() => {
     fetchScores();
+    getCurrentUser();
   }, []);
 
+  async function getCurrentUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user?.email) {
+      setUserEmail(user.email);
+    }
+  }
+
   async function fetchScores() {
-    // TODO: ดึงข้อมูลจาก API
-    const mockScores: Score[] = [
-      {
-        studentName: "กรุงเทพ",
-        username: "non",
-        scores: [4, 4, 4, 5, 4, 3, 4, 4, 5, 5, 7, 7, 8, 5, 3, 5, 4, 6],
-      },
-      {
-        studentName: "กรุงเทพ",
-        username: "sitthinon",
-        scores: [4, 4, 5, 8, 6, 7, 7, 5, 8, 5, 5, 5, 6, 4, 6, 8, 5, 5],
-      },
-      {
-        studentName: "กรุงเทพ",
-        username: "goft",
-        scores: [5, 7, 8, 5, 6, 3, 5, 4, 6, 7, 5, 6, 4, 5, 6, 5, 5, 5],
-      },
-      {
-        studentName: "ชลบุรี",
-        username: "Data",
-        scores: [5, 6, 6, 7, 8, 6, 4, 5, 6, 3, 5, 4, 5, 7, 8, 9, 6, 4],
-      },
-    ];
-    setScores(mockScores);
+    try {
+      setLoading(true);
+      const response = await fetch("/api/form-scores");
+      const data = await response.json();
+
+      if (data.scores) {
+        setScores(data.scores);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching scores:", error);
+      setLoading(false);
+    }
   }
 
   function handleAddScore() {
@@ -59,32 +66,86 @@ export default function ScoreEntryPage() {
     setIsModalOpen(true);
   }
 
-  function handleDeleteScore(username: string) {
-    if (confirm("คุณต้องการลบคะแนนนี้ใช่หรือไม่?")) {
-      setScores(scores.filter((s) => s.username !== username));
-      // TODO: ลบจาก Google Sheets
+  async function handleDeleteScore(rowIndex: number, playerName: string) {
+    if (confirm(`คุณต้องการลบคะแนนของ ${playerName} ใช่หรือไม่?`)) {
+      try {
+        const response = await fetch(`/api/form-scores?rowIndex=${rowIndex}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          setScores(scores.filter((s) => s.rowIndex !== rowIndex));
+          alert("ลบข้อมูลสำเร็จ!");
+        } else {
+          const data = await response.json();
+          alert("เกิดข้อผิดพลาด: " + (data.error || "Unknown error"));
+        }
+      } catch (error) {
+        console.error("Error deleting score:", error);
+        alert("เกิดข้อผิดพลาด");
+      }
     }
   }
 
-  function handleSaveScore(score: Score) {
-    if (editingScore) {
-      setScores(
-        scores.map((s) => (s.username === editingScore.username ? score : s))
-      );
-    } else {
-      setScores([...scores, score]);
+  async function handleSaveScore(score: Score) {
+    try {
+      if (editingScore) {
+        // แก้ไขข้อมูล
+        const response = await fetch("/api/form-scores", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(score),
+        });
+
+        if (response.ok) {
+          setScores(
+            scores.map((s) =>
+              s.rowIndex === editingScore.rowIndex ? score : s
+            )
+          );
+          alert("บันทึกข้อมูลสำเร็จ!");
+        } else {
+          const data = await response.json();
+          alert("เกิดข้อผิดพลาด: " + (data.error || "Unknown error"));
+        }
+      } else {
+        // เพิ่มข้อมูลใหม่
+        const response = await fetch("/api/form-scores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...score,
+            userEmail,
+          }),
+        });
+
+        if (response.ok) {
+          fetchScores();
+          alert("เพิ่มข้อมูลสำเร็จ!");
+        } else {
+          const data = await response.json();
+          alert("เกิดข้อผิดพลาด: " + (data.error || "Unknown error"));
+        }
+      }
+
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving score:", error);
+      alert("เกิดข้อผิดพลาด");
     }
-    setIsModalOpen(false);
-    // TODO: บันทึกไปยัง Google Sheets
   }
 
   const dict = {
-    title: { TH: "จัดการสกอร์", EN: "Manage Scores", CN: "管理分数" },
-    addButton: { TH: "เพิ่มสกอร์", EN: "Add Score", CN: "添加分数" },
-    studentName: { TH: "สนาม", EN: "Course", CN: "球场" },
-    username: { TH: "ผู้เล่น", EN: "Player", CN: "球员" },
+    title: {
+      TH: "จัดการคะแนนกอล์ฟ",
+      EN: "Manage Golf Scores",
+      CN: "管理高尔夫分数",
+    },
+    addButton: { TH: "เพิ่มคะแนน", EN: "Add Score", CN: "添加分数" },
+    location: { TH: "สนาม", EN: "Course", CN: "球场" },
+    playerName: { TH: "ชื่อผู้เล่น", EN: "Player Name", CN: "球员姓名" },
     scores: {
-      TH: "คะแนนสกอร์ (หลุม 1-18)",
+      TH: "คะแนน (หลุม 1-18)",
       EN: "Scores (Holes 1-18)",
       CN: "分数 (1-18洞)",
     },
@@ -92,6 +153,17 @@ export default function ScoreEntryPage() {
     edit: { TH: "แก้ไข", EN: "Edit", CN: "编辑" },
     delete: { TH: "ลบ", EN: "Delete", CN: "删除" },
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
@@ -119,10 +191,10 @@ export default function ScoreEntryPage() {
               <thead className="bg-gray-100 border-b-2 border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    {dict.studentName[lang]}
+                    {dict.location[lang]}
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    {dict.username[lang]}
+                    {dict.playerName[lang]}
                   </th>
                   <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">
                     {dict.scores[lang]}
@@ -133,16 +205,16 @@ export default function ScoreEntryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {scores.map((score, index) => (
+                {scores.map((score) => (
                   <tr
-                    key={index}
+                    key={score.rowIndex}
                     className="hover:bg-emerald-50 transition-colors"
                   >
                     <td className="px-6 py-4 text-sm font-semibold text-gray-800">
-                      {score.studentName}
+                      {score.location}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {score.username}
+                      {score.playerName}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2 justify-center">
@@ -165,7 +237,9 @@ export default function ScoreEntryPage() {
                           {dict.edit[lang]}
                         </button>
                         <button
-                          onClick={() => handleDeleteScore(score.username)}
+                          onClick={() =>
+                            handleDeleteScore(score.rowIndex!, score.playerName)
+                          }
                           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
                         >
                           {dict.delete[lang]}
@@ -182,7 +256,7 @@ export default function ScoreEntryPage() {
             <div className="text-center py-12 text-gray-500">
               <p className="text-lg">ยังไม่มีข้อมูลคะแนน</p>
               <p className="text-sm mt-2">
-                คลิกปุ่ม "เพิ่มสกอร์" เพื่อเริ่มต้น
+                คลิกปุ่ม "เพิ่มคะแนน" เพื่อเริ่มต้น
               </p>
             </div>
           )}

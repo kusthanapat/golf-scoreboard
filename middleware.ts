@@ -60,17 +60,26 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protected routes (ต้อง login)
-  const protectedPaths = ["/home", "/course-setup", "/score-entry", "/ranking"];
+  // Protected routes
+  const protectedPaths = ["/home", "/course-setup", "/score-entry"];
 
-  // ถ้ายังไม่ login และพยายามเข้าหน้าที่ต้อง login
-  if (protectedPaths.some((path) => pathname.startsWith(path)) && !user) {
-    return NextResponse.redirect(new URL("/", request.url)); // redirect ไป login (/)
+  // ✅ อนุญาตให้ผ่านถ้ามี hash fragment (OAuth callback)
+  // เพราะ Google OAuth จะ redirect กลับมาพร้อม #access_token
+  const hasAuthFragment = request.nextUrl.hash.includes("access_token");
+
+  // ถ้ายังไม่ login และพยายามเข้า protected routes
+  // แต่ถ้ามี auth fragment ให้ผ่านไปก่อน
+  if (
+    protectedPaths.some((path) => pathname.startsWith(path)) &&
+    !user &&
+    !hasAuthFragment
+  ) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // ถ้า login แล้วและพยายามเข้าหน้า login/register
-  if ((pathname === "/" || pathname === "/register") && user) {
-    return NextResponse.redirect(new URL("/home", request.url)); // redirect ไป home
+  // ถ้า login แล้วและเข้าหน้า login → redirect ไป /home
+  if (pathname === "/" && user) {
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
   return response;

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import SearchableDropdown from "./SearchableDropdown";
+import provinces from "@/data/provinces.json";
 
 type Language = "TH" | "EN" | "CN";
 
@@ -38,7 +40,6 @@ export default function CourseModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // ตรวจสอบว่าทุกช่องกรอกแล้ว
     const hasEmptyPar = pars.some(
       (par) => par === "" || par === null || par === undefined
     );
@@ -63,7 +64,12 @@ export default function CourseModal({
 
   const dict = {
     title: { TH: "ข้อมูลสนาม", EN: "Course Data", CN: "球场信息" },
-    courseName: { TH: "ชื่อสนาม", EN: "Course Name", CN: "球场名称" },
+    courseName: { TH: "จังหวัด", EN: "Province", CN: "省份" },
+    courseNamePlaceholder: {
+      TH: "พิมพ์เพื่อค้นหา...",
+      EN: "Type to search...",
+      CN: "输入搜索...",
+    },
     parValues: {
       TH: "ค่า Par ทั้ง 18 หลุม",
       EN: "Par Values (18 holes)",
@@ -91,17 +97,14 @@ export default function CourseModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
-          {/* ชื่อสนาม */}
+          {/* จังหวัด - Searchable Dropdown */}
           <div className="mb-6">
-            <label className="block text-gray-700 font-semibold mb-2">
-              {dict.courseName[lang]}
-            </label>
-            <input
-              type="text"
+            <SearchableDropdown
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="กรุงเทพ, ชลบุรี, etc."
+              onChange={setName}
+              options={provinces}
+              placeholder={dict.courseNamePlaceholder[lang]}
+              label={dict.courseName[lang]}
               required
             />
           </div>
