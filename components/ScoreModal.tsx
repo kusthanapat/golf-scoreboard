@@ -8,8 +8,8 @@ type Language = "TH" | "EN" | "CN";
 
 interface Score {
   rowIndex?: number;
-  location: string; // ✅ เปลี่ยนจาก studentName
-  playerName: string; // ✅ เปลี่ยนจาก username
+  location: string;
+  playerName: string;
   scores: number[];
 }
 

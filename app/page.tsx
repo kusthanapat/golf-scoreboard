@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ เพิ่มการตรวจสอบ OAuth callback
+  // เพิ่มการตรวจสอบ OAuth callback
   useEffect(() => {
     // ตรวจสอบว่ามี hash fragment จาก OAuth callback หรือไม่
     const hash = window.location.hash;
@@ -140,9 +140,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-8 text-white text-center">
-          <div className="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <span className="text-5xl">⛳</span>
-          </div>
+          <div className="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg"></div>
           <h1 className="text-3xl font-bold mb-2">{dict.welcome[lang]}</h1>
           <p className="text-emerald-100 text-sm">{dict.subtitle[lang]}</p>
         </div>

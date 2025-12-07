@@ -34,7 +34,7 @@ export async function GET() {
         rowIndex: index + 2,
         timestamp: row[0] || "",
         email: row[1] || "",
-        playerName: row[2] || "", // ✅ เปลี่ยนจาก username
+        playerName: row[2] || "",
         scores: [
           parseInt(row[3]) || 0,
           parseInt(row[4]) || 0,
@@ -55,7 +55,7 @@ export async function GET() {
           parseInt(row[19]) || 0,
           parseInt(row[20]) || 0,
         ],
-        location: row[21] || "", // ✅ เปลี่ยนจาก studentName
+        location: row[21] || "",
       }));
 
     return NextResponse.json({ scores });
@@ -72,9 +72,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { location, playerName, scores, userEmail } = body; // ✅ เปลี่ยนชื่อ
+    const { location, playerName, scores, userEmail } = body;
 
-    console.log("📥 Received data:", {
+    console.log("Received data:", {
       location,
       playerName,
       userEmail,
@@ -109,14 +109,14 @@ export async function POST(request: NextRequest) {
 
     // เตรียมข้อมูล
     const rowData = [
-      timestamp, // A: ประทับเวลา
-      email, // B: ที่อยู่อีเมล
-      playerName, // C: ชื่อผู้เล่น ✅
-      ...scores, // D-U: คะแนน 18 หลุม
-      location, // V: Location/Stadium ✅
+      timestamp,
+      email,
+      playerName,
+      ...scores,
+      location,
     ];
 
-    console.log("📝 Appending row:", {
+    console.log("Appending row:", {
       timestamp,
       email,
       playerName,
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log("✅ Append successful:", appendResponse.data.updates);
+    console.log("Append successful:", appendResponse.data.updates);
 
     return NextResponse.json({
       success: true,
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       updatedRange: appendResponse.data.updates?.updatedRange,
     });
   } catch (error: any) {
-    console.error("❌ Error adding score:", error);
+    console.error("Error adding score:", error);
     return NextResponse.json(
       {
         error: "Failed to add score",
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { rowIndex, location, playerName, scores } = body; // ✅ เปลี่ยนชื่อ
+    const { rowIndex, location, playerName, scores } = body; //
 
     console.log("📝 Updating row:", { rowIndex, playerName, location });
 
@@ -175,7 +175,7 @@ export async function PUT(request: NextRequest) {
     const sheets = getGoogleSheetsClient();
 
     // อัปเดตข้อมูล
-    const rowData = [playerName, ...scores, location]; // ✅
+    const rowData = [playerName, ...scores, location]; //
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
@@ -186,14 +186,14 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    console.log("✅ Update successful");
+    console.log("Update successful");
 
     return NextResponse.json({
       success: true,
       message: "แก้ไขข้อมูลสำเร็จ",
     });
   } catch (error: any) {
-    console.error("❌ Error updating score:", error);
+    console.error("Error updating score:", error);
     return NextResponse.json(
       { error: "Failed to update score", details: error.message },
       { status: 500 }
@@ -250,14 +250,14 @@ export async function DELETE(request: NextRequest) {
       },
     });
 
-    console.log("✅ Delete successful");
+    console.log("Delete successful");
 
     return NextResponse.json({
       success: true,
       message: "ลบข้อมูลสำเร็จ",
     });
   } catch (error: any) {
-    console.error("❌ Error deleting score:", error);
+    console.error("Error deleting score:", error);
     return NextResponse.json(
       { error: "Failed to delete score", details: error.message },
       { status: 500 }

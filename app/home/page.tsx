@@ -19,7 +19,7 @@ interface ApiResponse {
   players: PlayerInput[];
   pars: number[];
   stadiums: string[];
-  locationNotFound?: boolean; // ✅ เพิ่ม flag
+  locationNotFound?: boolean;
 }
 
 interface RankingPlayer {
@@ -47,7 +47,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [locationNotFound, setLocationNotFound] = useState(false); // ✅ เพิ่ม state
+  const [locationNotFound, setLocationNotFound] = useState(false);
 
   // Ranking states
   const [showRankings, setShowRankings] = useState(false);
@@ -71,7 +71,7 @@ export default function HomePage() {
 
       const data: ApiResponse = await response.json();
 
-      // ✅ ตั้งค่า locationNotFound flag
+      // ตั้งค่า locationNotFound flag
       setLocationNotFound(data.locationNotFound || false);
 
       if (data.players) {
@@ -114,7 +114,7 @@ export default function HomePage() {
 
   // ฟังก์ชันคำนวณ Ranking
   async function handleCalculateRanking() {
-    // ✅ ตรวจสอบว่ามี PAR หรือไม่
+    // ตรวจสอบว่ามี PAR หรือไม่
     if (pars.length === 0 || locationNotFound) {
       alert("ไม่สามารถคำนวณอันดับได้ เนื่องจากไม่พบข้อมูลสนาม");
       return;
@@ -172,9 +172,9 @@ export default function HomePage() {
       CN: "C组 (24.1-36)",
     },
     locationNotFoundMsg: {
-      TH: `⚠️ ไม่พบข้อมูลสนาม "${selectedLocation}" ใน Sheet Name_stadium`,
-      EN: `⚠️ Location "${selectedLocation}" not found in Name_stadium sheet`,
-      CN: `⚠️ 在 Name_stadium 工作表中未找到 "${selectedLocation}"`,
+      TH: `ไม่พบข้อมูลสนาม "${selectedLocation}" ใน Sheet Name_stadium`,
+      EN: `Location "${selectedLocation}" not found in Name_stadium sheet`,
+      CN: `在 Name_stadium 工作表中未找到 "${selectedLocation}"`,
     },
   };
 
@@ -397,7 +397,7 @@ export default function HomePage() {
                   {dict.hcp[lang]}
                 </th>
 
-                {/* ✅ แสดง PAR หรือ "-" */}
+                {/* แสดง PAR หรือ "-" */}
                 {pars.length > 0
                   ? pars.map((par, i) => (
                       <th

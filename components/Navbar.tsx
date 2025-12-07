@@ -149,7 +149,6 @@ export default function Navbar({ currentLang, onLanguageChange }: NavbarProps) {
   );
 }
 
-// ✅ ลบ icon ออก
 function NavButton({ href, label }: { href: string; label: string }) {
   return (
     <Link
@@ -161,7 +160,6 @@ function NavButton({ href, label }: { href: string; label: string }) {
   );
 }
 
-// ✅ ลบ icon ออก
 function MobileNavButton({ href, label }: { href: string; label: string }) {
   return (
     <Link

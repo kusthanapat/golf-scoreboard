@@ -11,8 +11,8 @@ interface Score {
   rowIndex?: number;
   timestamp?: string;
   email?: string;
-  location: string; // ✅ เปลี่ยนจาก studentName
-  playerName: string; // ✅ เปลี่ยนจาก username
+  location: string;
+  playerName: string;
   scores: number[];
 }
 

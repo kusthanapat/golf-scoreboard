@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     let stadiums: string[] = [];
     let locationNotFound = false;
 
-    // ✅ ถ้าไม่เจอ location → return empty data แต่ไม่ error
+    // ถ้าไม่เจอ location → return empty data แต่ไม่ error
     if (!stadiumRow) {
       locationNotFound = true;
       pars = [];
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       players,
       pars,
       stadiums,
-      locationNotFound, // ✅ เพิ่ม flag
+      locationNotFound,
     });
   } catch (error: any) {
     console.error("Error fetching Google Sheets data:", error);
