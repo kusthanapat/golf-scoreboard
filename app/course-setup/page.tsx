@@ -72,7 +72,6 @@ export default function CourseSetupPage() {
         throw new Error(data.error || "ลบสนามไม่สำเร็จ");
       }
 
-      // Refresh list
       fetchCourses();
       alert("ลบสนามสำเร็จ");
     } catch (err: any) {
@@ -83,7 +82,6 @@ export default function CourseSetupPage() {
   async function handleSaveCourse(course: Course) {
     try {
       if (editingCourse) {
-        // แก้ไข
         const response = await fetch("/api/courses", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -102,7 +100,6 @@ export default function CourseSetupPage() {
 
         alert("แก้ไขสนามสำเร็จ");
       } else {
-        // เพิ่มใหม่
         const response = await fetch("/api/courses", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -119,7 +116,7 @@ export default function CourseSetupPage() {
       }
 
       setIsModalOpen(false);
-      fetchCourses(); // Refresh list
+      fetchCourses();
     } catch (err: any) {
       alert(err.message || "เกิดข้อผิดพลาด");
     }
@@ -200,87 +197,109 @@ export default function CourseSetupPage() {
       <Navbar currentLang={lang} onLanguageChange={setLang} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        {/* Header - Responsive */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
             {dict.title[lang]}
           </h1>
           <button
             onClick={handleAddCourse}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-all"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg transition-all"
           >
             <span className="text-xl">+</span>
             {dict.addButton[lang]}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b-2 border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    {dict.name[lang]}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">
-                    {dict.par[lang]}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">
-                    {dict.actions[lang]}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {courses.map((course, index) => (
-                  <tr
-                    key={index}
-                    className="hover:bg-emerald-50 transition-colors"
+        {/* Courses List - Card Layout for Mobile */}
+        <div className="space-y-4">
+          {courses.map((course, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+            >
+              {/* Course Header */}
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 flex justify-between items-center">
+                <h3 className="text-white font-bold text-lg">{course.name}</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditCourse(course)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
                   >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-800">
-                      {course.name}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {course.pars.map((par, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center justify-center w-8 h-8 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold"
-                          >
-                            {par}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEditCourse(course)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                        >
-                          {dict.edit[lang]}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCourse(course.name)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                        >
-                          {dict.delete[lang]}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    {dict.edit[lang]}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCourse(course.name)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                  >
+                    {dict.delete[lang]}
+                  </button>
+                </div>
+              </div>
 
-          {courses.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg">{dict.noData[lang]}</p>
-              <p className="text-sm mt-2">{dict.clickToAdd[lang]}</p>
+              {/* PAR Display - Horizontal Grid */}
+              <div className="p-4">
+                <p className="text-sm text-gray-600 font-semibold mb-3">
+                  {dict.par[lang]}
+                </p>
+                <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
+                  {course.pars.map((par, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center justify-center bg-emerald-50 rounded-lg p-2"
+                    >
+                      <span className="text-xs text-gray-500 font-medium">
+                        {idx + 1}
+                      </span>
+                      <span className="text-lg font-bold text-emerald-700">
+                        {par}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total PAR */}
+                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                  <div className="bg-emerald-100 px-4 py-2 rounded-lg">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Total PAR:{" "}
+                    </span>
+                    <span className="text-xl font-bold text-emerald-700">
+                      {course.pars.reduce((a, b) => a + b, 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* Empty State */}
+        {courses.length === 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <p className="text-lg text-gray-600 font-semibold">
+              {dict.noData[lang]}
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              {dict.clickToAdd[lang]}
+            </p>
+          </div>
+        )}
       </main>
 
       {/* Modal */}

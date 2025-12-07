@@ -90,7 +90,6 @@ export default function ScoreEntryPage() {
   async function handleSaveScore(score: Score) {
     try {
       if (editingScore) {
-        // แก้ไขข้อมูล
         const response = await fetch("/api/form-scores", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -109,7 +108,6 @@ export default function ScoreEntryPage() {
           alert("เกิดข้อผิดพลาด: " + (data.error || "Unknown error"));
         }
       } else {
-        // เพิ่มข้อมูลใหม่
         const response = await fetch("/api/form-scores", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -152,6 +150,7 @@ export default function ScoreEntryPage() {
     actions: { TH: "จัดการ", EN: "Actions", CN: "操作" },
     edit: { TH: "แก้ไข", EN: "Edit", CN: "编辑" },
     delete: { TH: "ลบ", EN: "Delete", CN: "删除" },
+    total: { TH: "รวม", EN: "Total", CN: "总计" },
   };
 
   if (loading) {
@@ -170,97 +169,116 @@ export default function ScoreEntryPage() {
       <Navbar currentLang={lang} onLanguageChange={setLang} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        {/* Header - Responsive */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
             {dict.title[lang]}
           </h1>
           <button
             onClick={handleAddScore}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-all"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg transition-all"
           >
             <span className="text-xl">+</span>
             {dict.addButton[lang]}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b-2 border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    {dict.location[lang]}
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    {dict.playerName[lang]}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">
-                    {dict.scores[lang]}
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">
-                    {dict.actions[lang]}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {scores.map((score) => (
-                  <tr
-                    key={score.rowIndex}
-                    className="hover:bg-emerald-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-800">
-                      {score.location}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {score.playerName}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {score.scores.map((s, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-800 rounded text-xs font-bold"
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleEditScore(score)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                        >
-                          {dict.edit[lang]}
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDeleteScore(score.rowIndex!, score.playerName)
-                          }
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-                        >
-                          {dict.delete[lang]}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* Scores List - Card Layout */}
+        <div className="space-y-4">
+          {scores.map((score) => (
+            <div
+              key={score.rowIndex}
+              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+            >
+              {/* Player Header */}
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-4">
+                <div className="flex justify-between items-start">
+                  <div className="text-white flex-1">
+                    <h3 className="font-bold text-lg">{score.playerName}</h3>
+                    <p className="text-emerald-100 text-sm">{score.location}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditScore(score)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                    >
+                      {dict.edit[lang]}
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDeleteScore(score.rowIndex!, score.playerName)
+                      }
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                    >
+                      {dict.delete[lang]}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-          {scores.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg">ยังไม่มีข้อมูลคะแนน</p>
-              <p className="text-sm mt-2">
-                คลิกปุ่ม "เพิ่มคะแนน" เพื่อเริ่มต้น
-              </p>
+              {/* Scores Display - Horizontal Grid */}
+              <div className="p-4">
+                <p className="text-sm text-gray-600 font-semibold mb-3">
+                  {dict.scores[lang]}
+                </p>
+                <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
+                  {score.scores.map((s, idx) => (
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-2"
+                    >
+                      <span className="text-xs text-gray-500 font-medium">
+                        {idx + 1}
+                      </span>
+                      <span className="text-lg font-bold text-gray-800">
+                        {s}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total Score */}
+                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
+                  <div className="bg-emerald-100 px-4 py-2 rounded-lg">
+                    <span className="text-sm text-gray-600 font-medium">
+                      {dict.total[lang]}:{" "}
+                    </span>
+                    <span className="text-xl font-bold text-emerald-700">
+                      {score.scores.reduce((a, b) => a + b, 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* Empty State */}
+        {scores.length === 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <p className="text-lg text-gray-600 font-semibold">
+              ยังไม่มีข้อมูลคะแนน
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              คลิกปุ่ม "เพิ่มคะแนน" เพื่อเริ่มต้น
+            </p>
+          </div>
+        )}
       </main>
 
       {/* Modal */}
