@@ -105,7 +105,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/`, // ← เปลี่ยนเป็น / แทน /home
+          redirectTo: `${window.location.origin}/`,
         },
       });
 
@@ -140,7 +140,9 @@ export default function LoginPage() {
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-8 text-white text-center">
-          <div className="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg"></div>
+          <div className="w-20 h-20 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-5xl">⛳</span>
+          </div>
           <h1 className="text-3xl font-bold mb-2">{dict.welcome[lang]}</h1>
           <p className="text-emerald-100 text-sm">{dict.subtitle[lang]}</p>
         </div>
