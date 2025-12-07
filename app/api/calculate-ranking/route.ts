@@ -63,8 +63,7 @@ function randomizeParIndexes(pars: number[]): number[] {
 // ฟังก์ชันคำนวณ 差點 (Difference)
 function calculateDifference(
   randomizedScores: number[],
-  totalPar: number,
-  sumRandomizedPar: number
+  totalPar: number
 ): number {
   const sumScores = randomizedScores.reduce((a, b) => a + b, 0);
   return (sumScores * 1.5 - totalPar) * 0.8;
@@ -72,9 +71,9 @@ function calculateDifference(
 
 // ฟังก์ชันคำนวณ 確定 (Confirmed Handicap)
 function calculateConfirmed(difference: number): number {
-  if (difference < -50) return 0;
+  // ให้สามารถติดลบได้ แต่จำกัดไม่ให้ต่ำกว่า -50
+  if (difference < -50) return -50;
   if (difference > 36) return 36;
-  if (difference < 0) return 0;
   return Math.round(difference * 10) / 10; // ปัดทศนิยม 1 ตำแหน่ง
 }
 
@@ -139,7 +138,6 @@ export async function POST(request: NextRequest) {
 
       // สุ่ม PAR
       const randomizedPar = randomizeParIndexes(pars);
-      const sumRandomizedPar = randomizedPar.reduce((a, b) => a + b, 0);
 
       // สุ่ม Scores ตาม index ของ PAR ที่เป็น 0
       const randomizedScores = scores.map((score, idx) =>
@@ -147,13 +145,9 @@ export async function POST(request: NextRequest) {
       );
 
       // คำนวณ 差點
-      const difference = calculateDifference(
-        randomizedScores,
-        totalPar,
-        sumRandomizedPar
-      );
+      const difference = calculateDifference(randomizedScores, totalPar);
 
-      // คำนวณ 確定
+      // คำนวณ 確定 (ตอนนี้สามารถติดลบได้แล้ว)
       const confirmed = calculateConfirmed(difference);
 
       return {
@@ -165,10 +159,11 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // 4. แบ่งกลุ่ม
+    // 4. แบ่งกลุ่มตาม confirmed value
+    // Group A: รวมทั้งค่าติดลบและ 0-12
     const groupA = rankings
-      .filter((r) => r.confirmed >= 0 && r.confirmed <= 12)
-      .sort((a, b) => a.difference - b.difference);
+      .filter((r) => r.confirmed <= 12)
+      .sort((a, b) => a.difference - b.difference); // เรียงจากน้อยไปมาก (ติดลบมากสุดอันดับ 1)
 
     const groupB = rankings
       .filter((r) => r.confirmed > 12 && r.confirmed <= 24)
