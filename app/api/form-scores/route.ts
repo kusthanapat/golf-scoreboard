@@ -1,98 +1,96 @@
-import { google } from "googleapis";
 import { NextRequest, NextResponse } from "next/server";
+import { env } from "@/lib/env";
+import { getSheetData, appendSheetData, updateSheetData, deleteSheetRows, getSheetIdByName } from "@/lib/google-sheets";
+import { validatePlayerName, validateScoreArray, validateLocation, sanitizeString } from "@/lib/validation";
+import { createErrorResponse, AppError, validateRequiredFields } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
-const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID!;
-const SHEET_NAME = "Form_Res";
+const SHEET_NAME = env.sheetNameFormRes;
 
-function getGoogleSheetsClient() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  return google.sheets({ version: "v4", auth });
+interface ScoreRow {
+  rowIndex: number;
+  timestamp: string;
+  email: string;
+  playerName: string;
+  scores: number[];
+  location: string;
 }
 
-// GET: ดึงข้อมูลทั้งหมด
-export async function GET() {
+interface PostScoreBody {
+  location: string;
+  playerName: string;
+  scores: number[];
+  userEmail?: string;
+}
+
+interface PutScoreBody {
+  rowIndex: number;
+  location: string;
+  playerName: string;
+  scores: number[];
+}
+
+// GET: Fetch all scores
+export async function GET(): Promise<NextResponse> {
   try {
-    const sheets = getGoogleSheetsClient();
+    const rows = await getSheetData(`${SHEET_NAME}!A2:V`);
 
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A2:V`,
-    });
-
-    const rows = response.data.values || [];
-
-    const scores = rows
+    const scores: ScoreRow[] = rows
       .filter((row) => row.length > 0 && row[2])
       .map((row, index) => ({
         rowIndex: index + 2,
-        timestamp: row[0] || "",
-        email: row[1] || "",
-        playerName: row[2] || "",
-        scores: [
-          parseInt(row[3]) || 0,
-          parseInt(row[4]) || 0,
-          parseInt(row[5]) || 0,
-          parseInt(row[6]) || 0,
-          parseInt(row[7]) || 0,
-          parseInt(row[8]) || 0,
-          parseInt(row[9]) || 0,
-          parseInt(row[10]) || 0,
-          parseInt(row[11]) || 0,
-          parseInt(row[12]) || 0,
-          parseInt(row[13]) || 0,
-          parseInt(row[14]) || 0,
-          parseInt(row[15]) || 0,
-          parseInt(row[16]) || 0,
-          parseInt(row[17]) || 0,
-          parseInt(row[18]) || 0,
-          parseInt(row[19]) || 0,
-          parseInt(row[20]) || 0,
-        ],
-        location: row[21] || "",
+        timestamp: String(row[0] || ""),
+        email: String(row[1] || ""),
+        playerName: sanitizeString(String(row[2] || "")),
+        scores: Array.from({ length: 18 }, (_, i) => {
+          const value = row[i + 3];
+          const parsed = typeof value === 'number' ? value : parseInt(String(value), 10);
+          return isNaN(parsed) ? 0 : parsed;
+        }),
+        location: sanitizeString(String(row[21] || "")),
       }));
 
     return NextResponse.json({ scores });
-  } catch (error: any) {
-    console.error("Error fetching scores:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch scores", details: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error("Failed to fetch scores", { error });
+    return createErrorResponse(error, "Failed to fetch scores");
   }
 }
 
-// POST: เพิ่มข้อมูลใหม่
-export async function POST(request: NextRequest) {
+// POST: Add new score
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const body = await request.json();
+    const body = await request.json() as PostScoreBody;
+
+    // Validate required fields
+    validateRequiredFields(body, ['location', 'playerName', 'scores']);
+
     const { location, playerName, scores, userEmail } = body;
 
-    console.log("Received data:", {
-      location,
-      playerName,
-      userEmail,
-      scoresLength: scores?.length,
-    });
-
-    // Validation
-    if (!location || !playerName || !scores || scores.length !== 18) {
-      return NextResponse.json(
-        { error: "Invalid data: location, playerName and 18 scores required" },
-        { status: 400 }
-      );
+    // Validate player name
+    const nameValidation = validatePlayerName(playerName);
+    if (!nameValidation.valid) {
+      throw new AppError(nameValidation.errors.join(', '), 400, 'INVALID_PLAYER_NAME');
     }
 
-    const email = userEmail || "anonymous@example.com";
-    const sheets = getGoogleSheetsClient();
+    // Validate location
+    const locationValidation = validateLocation(location);
+    if (!locationValidation.valid) {
+      throw new AppError(locationValidation.errors.join(', '), 400, 'INVALID_LOCATION');
+    }
 
-    // สร้าง timestamp
+    // Validate scores array
+    const scoresValidation = validateScoreArray(scores);
+    if (!scoresValidation.valid) {
+      throw new AppError(scoresValidation.errors.join(', '), 400, 'INVALID_SCORES');
+    }
+
+    // Sanitize inputs
+    const sanitizedPlayerName = sanitizeString(playerName);
+    const sanitizedLocation = sanitizeString(location);
+    const email = userEmail ? sanitizeString(userEmail) : "anonymous@example.com";
+
+    // Create timestamp in Thai timezone
     const now = new Date();
     const thaiDate = new Date(
       now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" })
@@ -107,160 +105,122 @@ export async function POST(request: NextRequest) {
 
     const timestamp = `${month}/${day}/${year}, ${hours}:${minutes}:${seconds}`;
 
-    // เตรียมข้อมูล
+    // Prepare row data
     const rowData = [
       timestamp,
       email,
-      playerName,
+      sanitizedPlayerName,
       ...scores,
-      location,
+      sanitizedLocation,
     ];
 
-    console.log("Appending row:", {
-      timestamp,
-      email,
-      playerName,
-      location,
-      rowLength: rowData.length,
+    logger.info("Adding new score", {
+      playerName: sanitizedPlayerName,
+      location: sanitizedLocation
     });
 
-    // Append ข้อมูล
-    const appendResponse = await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:V`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [rowData],
-      },
-    });
-
-    console.log("Append successful:", appendResponse.data.updates);
+    // Append data to sheet
+    await appendSheetData(`${SHEET_NAME}!A:V`, [rowData]);
 
     return NextResponse.json({
       success: true,
-      message: "เพิ่มข้อมูลสำเร็จ",
-      updatedRange: appendResponse.data.updates?.updatedRange,
+      message: "Score added successfully",
     });
-  } catch (error: any) {
-    console.error("Error adding score:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to add score",
-        details: error.message,
-        stack: error.stack,
-      },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error("Failed to add score", { error });
+    return createErrorResponse(error, "Failed to add score");
   }
 }
 
-// PUT: แก้ไขข้อมูล
-export async function PUT(request: NextRequest) {
+// PUT: Update existing score
+export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
-    const body = await request.json();
-    const { rowIndex, location, playerName, scores } = body; //
+    const body = await request.json() as PutScoreBody;
 
-    console.log("📝 Updating row:", { rowIndex, playerName, location });
+    // Validate required fields
+    validateRequiredFields(body, ['rowIndex', 'location', 'playerName', 'scores']);
 
-    if (
-      !rowIndex ||
-      !location ||
-      !playerName ||
-      !scores ||
-      scores.length !== 18
-    ) {
-      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    const { rowIndex, location, playerName, scores } = body;
+
+    // Validate row index
+    if (!Number.isInteger(rowIndex) || rowIndex < 2) {
+      throw new AppError("Invalid row index", 400, 'INVALID_ROW_INDEX');
     }
 
-    const sheets = getGoogleSheetsClient();
+    // Validate player name
+    const nameValidation = validatePlayerName(playerName);
+    if (!nameValidation.valid) {
+      throw new AppError(nameValidation.errors.join(', '), 400, 'INVALID_PLAYER_NAME');
+    }
 
-    // อัปเดตข้อมูล
-    const rowData = [playerName, ...scores, location]; //
+    // Validate location
+    const locationValidation = validateLocation(location);
+    if (!locationValidation.valid) {
+      throw new AppError(locationValidation.errors.join(', '), 400, 'INVALID_LOCATION');
+    }
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!C${rowIndex}:V${rowIndex}`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [rowData],
-      },
+    // Validate scores array
+    const scoresValidation = validateScoreArray(scores);
+    if (!scoresValidation.valid) {
+      throw new AppError(scoresValidation.errors.join(', '), 400, 'INVALID_SCORES');
+    }
+
+    // Sanitize inputs
+    const sanitizedPlayerName = sanitizeString(playerName);
+    const sanitizedLocation = sanitizeString(location);
+
+    // Prepare row data
+    const rowData = [sanitizedPlayerName, ...scores, sanitizedLocation];
+
+    logger.info("Updating score", {
+      rowIndex,
+      playerName: sanitizedPlayerName,
+      location: sanitizedLocation
     });
 
-    console.log("Update successful");
+    // Update data in sheet
+    await updateSheetData(`${SHEET_NAME}!C${rowIndex}:V${rowIndex}`, [rowData]);
 
     return NextResponse.json({
       success: true,
-      message: "แก้ไขข้อมูลสำเร็จ",
+      message: "Score updated successfully",
     });
-  } catch (error: any) {
-    console.error("Error updating score:", error);
-    return NextResponse.json(
-      { error: "Failed to update score", details: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error("Failed to update score", { error });
+    return createErrorResponse(error, "Failed to update score");
   }
 }
 
-// DELETE: ลบข้อมูล
-export async function DELETE(request: NextRequest) {
+// DELETE: Delete score
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
-    const rowIndex = searchParams.get("rowIndex");
+    const rowIndexParam = searchParams.get("rowIndex");
 
-    if (!rowIndex) {
-      return NextResponse.json(
-        { error: "Row index is required" },
-        { status: 400 }
-      );
+    if (!rowIndexParam) {
+      throw new AppError("Row index is required", 400, 'MISSING_ROW_INDEX');
     }
 
-    console.log("🗑️ Deleting row:", rowIndex);
+    const rowIndex = parseInt(rowIndexParam, 10);
 
-    const sheets = getGoogleSheetsClient();
+    if (isNaN(rowIndex) || rowIndex < 2) {
+      throw new AppError("Invalid row index", 400, 'INVALID_ROW_INDEX');
+    }
 
-    // หา sheetId
-    const sheetMetadata = await sheets.spreadsheets.get({
-      spreadsheetId: SHEET_ID,
-    });
+    logger.info("Deleting score", { rowIndex });
 
-    const formResSheet = sheetMetadata.data.sheets?.find(
-      (sheet) => sheet.properties?.title === SHEET_NAME
-    );
+    // Get sheet ID by name (don't assume it's 0)
+    const sheetId = await getSheetIdByName(SHEET_NAME);
 
-    const sheetId = formResSheet?.properties?.sheetId || 0;
-
-    console.log("📋 Found sheetId:", sheetId);
-
-    // ลบแถว
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: SHEET_ID,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId: sheetId,
-                dimension: "ROWS",
-                startIndex: parseInt(rowIndex) - 1,
-                endIndex: parseInt(rowIndex),
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    console.log("Delete successful");
+    // Delete row from sheet
+    await deleteSheetRows(sheetId, rowIndex - 1, rowIndex);
 
     return NextResponse.json({
       success: true,
-      message: "ลบข้อมูลสำเร็จ",
+      message: "Score deleted successfully",
     });
-  } catch (error: any) {
-    console.error("Error deleting score:", error);
-    return NextResponse.json(
-      { error: "Failed to delete score", details: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error("Failed to delete score", { error });
+    return createErrorResponse(error, "Failed to delete score");
   }
 }

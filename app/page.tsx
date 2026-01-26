@@ -102,7 +102,9 @@ export default function LoginPage() {
       setLoading(true);
 
       const redirectUrl =
-        typeof window !== "undefined" ? `${window.location.origin}/` : "/";
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : "/auth/callback";
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
